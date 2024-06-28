@@ -3,9 +3,14 @@ project:
   compiler: GCC
 
   groups:
-    - group: App
+    - group: TinyUSB Example App (CDC-ACM + MSD)
       files:
         - file: main.c
+        - file: usb_desc.c
+        - file: msc_disk.c
+
+  layers:
+    - layer: ../tinyusb_alif/tinyusb_alif.clayer.yaml
 
   linker:
     - script: gcc_M55_HE.ld

@@ -7,19 +7,15 @@
             "windows": {
                 "command": [
                     "cbuild ${command:cmsis-csolution.getSolutionPath} --clean;",
-                    "rm -Force ./blinky/*.cbuild.yml;",
-                    "rm -Force ./blinky/*.cprj;",
-                    "rm -Force ./hello/*.cbuild.yml;",
-                    "rm -Force ./hello/*.cprj;"
+                    "rm -Force ./src/*.cbuild.yml;",
+                    "rm -Force ./src/*.cprj;",
                 ]
             },
             "linux": {
                 "command": [
                     "cbuild ${command:cmsis-csolution.getSolutionPath} --clean;",
-                    "rm -f ./blinky/*.cbuild.yml;",
-                    "rm -f ./blinky/*.cprj;",
-                    "rm -f ./hello/*.cbuild.yml;",
-                    "rm -f ./hello/*.cprj;"
+                    "rm -f ./src/*.cbuild.yml;",
+                    "rm -f ./src/*.cprj;",
                 ]
             },
             "problemMatcher": []

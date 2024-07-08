@@ -27,6 +27,13 @@
                     }
                 }
             ]
+        },
+        {
+            "path": "alif.csolution.yaml",
+            "target": "HP",
+            "config": {
+                "debug": "Alif Ensemble Debug (Cortex-Debug)"
+            }
         }
     ],
 }

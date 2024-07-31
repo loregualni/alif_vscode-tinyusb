@@ -8,12 +8,17 @@
  *
  */
 
-#include "RTE_Components.h"
-#include CMSIS_device_header
-
 #include "tusb_option.h"
 
 #if CFG_TUD_ENABLED
+
+#if defined(CORE_M55_HE)
+#include "M55_HE.h"
+#elif defined(CORE_M55_HP)
+#include "M55_HP.h"
+#else
+#error "Unsupported core!"
+#endif
 
 #include "device/dcd.h"
 
@@ -161,8 +166,10 @@ void dcd_init(uint8_t rhport)
     udev->dalepena_b.usbactep = (1 << 1) | (1 << 0);
 
     // enable interrupts in the NVIC
+#if !defined(TUSB_ALIF_NO_IRQ_CFG)
     NVIC_ClearPendingIRQ(USB_IRQ_IRQn);
     NVIC_SetPriority(USB_IRQ_IRQn, 5);
+#endif
     dcd_int_enable(rhport);
 }
 

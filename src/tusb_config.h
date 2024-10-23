@@ -75,7 +75,7 @@
  * - CFG_TUSB_MEM_ALIGN   : __attribute__ ((aligned(4)))
  */
 #ifndef CFG_TUSB_MEM_SECTION
-#define CFG_TUSB_MEM_SECTION        __attribute__((section(".bss.sram0")))
+#define CFG_TUSB_MEM_SECTION        __attribute__((section("usb_dma_buf")))
 #endif
 
 #ifndef CFG_TUSB_MEM_ALIGN

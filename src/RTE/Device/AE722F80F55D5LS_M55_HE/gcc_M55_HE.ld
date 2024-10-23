@@ -1,6 +1,7 @@
+
 /* This file was ported to work on Alif Semiconductor Ensemble family of devices. */
 
-/* Copyright (C) 2022 Alif Semiconductor - All Rights Reserved.
+/* Copyright (C) 2023 Alif Semiconductor - All Rights Reserved.
  * Use, distribution and modification of this code is permitted under the
  * terms stated in the Alif Semiconductor Software License Agreement
  *
@@ -27,10 +28,20 @@
  * limitations under the License.
  */
 
-__STACK_SIZE = 0x00002000;
-__HEAP_SIZE  = 0x00004000;
-__ROM_BASE = 0x80000000;
-__ROM_SIZE = 0x0057F000;
+__STACK_SIZE    = 0x00002000;
+__HEAP_SIZE     = 0x00004000;
+__APP_HEAP_SIZE = 0x00004000;
+__ROM_BASE      = 0x80000000;
+__ROM_SIZE      = 0x00200000;
+
+TGU_BLOCK_SIZE   = 16384;
+
+/*
+ * Note:
+ * The empty regions(eg SRAM1) are ON by default, but may have been released
+ * by some example applications. So make sure your application requests
+ * power for these regions before adding contents.
+ */
 
 MEMORY
 {
@@ -49,15 +60,19 @@ SECTIONS
   {
     KEEP(*(.vectors))
 
-    *startup_M55_*.c.obj(.text .rodata*)
-    *system_M55.c.obj(.text .rodata*)
-    *mpu_M55.c.obj(.text .rodata*)
-    *system_utils.c.obj(.text .rodata*)
+    *startup_*(.text .rodata*)
+    *system_*(.text .rodata*)
+    *system_utils*(.text .rodata*)
+    *pm*(.text .rodata*)
+    *tgu_*(.text .rodata*)
+    *mpu_*(.text .rodata*)
+    *tcm_partition*(.text .rodata*)
 
-    *lv_*.c.obj(.text .rodata*)
+    *lv_*(.text .rodata*)
 
     *(startup_ro_data)
-  } > ITCM
+    . = ALIGN(16);
+  } > MRAM
 
   .copy.table : ALIGN(4)
   {
@@ -65,8 +80,12 @@ SECTIONS
     LONG ( LOADADDR(.data.at_dtcm) )
     LONG ( ADDR(.data.at_dtcm) )
     LONG ( SIZEOF(.data.at_dtcm)/4 )
+    LONG ( LOADADDR(.code.at_itcm) )
+    LONG ( ADDR(.code.at_itcm) )
+    LONG ( SIZEOF(.code.at_itcm)/4 )
     __copy_table_end__ = .;
-  } > ITCM
+    . = ALIGN(16);
+  } > MRAM
 
   .zero.table : ALIGN(4)
   {
@@ -75,22 +94,22 @@ SECTIONS
     LONG (SIZEOF(.bss)/4)
     LONG (ADDR(.bss.at_sram0))
     LONG (SIZEOF(.bss.at_sram0)/4)
-    LONG (ADDR(.bss.at_sram1))
-    LONG (SIZEOF(.bss.at_sram1)/4)
     __zero_table_end__ = .;
-  } > ITCM
+    . = ALIGN(16);
+  } > MRAM
 
   .code.at_itcm : ALIGN(8)
   {
     *(.text*)
-  } > ITCM
+    . = ALIGN(16);
+  } > ITCM AT > MRAM
 
   .data.at_dtcm : ALIGN(8)
   {
     *(vtable)
     *(.data)
     *(.data*)
-    *arm_common_tables.c.obj(.data* .rodata*)
+    *arm_common_tables*(.data* .rodata*)
 
     KEEP(*(.jcr*))
 
@@ -100,22 +119,16 @@ SECTIONS
     __exidx_start = .;
     *(.ARM.exidx* .gnu.linkonce.armexidx.*)
     __exidx_end = .;
-
-  } > DTCM AT > ITCM
+    . = ALIGN(16);
+  } > DTCM AT > MRAM
 
   .bss.at_sram0 (NOLOAD) : ALIGN(8)
   {
-    * (.bss.lcd_crop_and_interpolate_buf)  /* LCD crop and intrepolate image processing buffer. */
-    * (.bss.lcd_frame_buf)                 /* LCD frame Buffer. */
-    * (.bss.sram0*)
+    *(.bss.lcd_crop_and_interpolate_buf)  /* LCD crop and intrepolate image processing buffer. */
+    *(.bss.lcd_frame_buf)                 /* LCD frame Buffer. */
+    *(.bss.camera_frame_buf)              /* Camer Frame Buffer */
+    *(.bss.camera_frame_bayer_to_rgb_buf) /* (Optional) Camera Frame Buffer for Bayer to RGB Conversion. */
   } > SRAM0
-
-  .bss.at_sram1 (NOLOAD) :
-  {
-    * (.bss.camera_frame_buf)              /* Camer Frame Buffer */
-    * (.bss.camera_frame_bayer_to_rgb_buf) /* (Optional) Camera Frame Buffer for Bayer to RGB Conversion. */             /* LCD frame Buffer. */
-    * (.bss.sram1*)
-  } > SRAM1
 
   .bss (NOLOAD) : ALIGN(8)
   {
@@ -127,6 +140,25 @@ SECTIONS
     . = ALIGN(8);
     __bss_end__ = .;
   } > DTCM
+
+  .nonsecure0_region (NOLOAD) :
+  {
+    . = ALIGN(TGU_BLOCK_SIZE);
+    __ns_region_0_start = .;
+    * (eth_buf)
+    * (usb_dma_buf)
+    * (sd_dma_buf)
+    . = ALIGN(TGU_BLOCK_SIZE);
+    __ns_region_0_end = .;
+  } > DTCM
+
+  .__app_heap (NOLOAD) : ALIGN(8)
+  {
+     . = ALIGN(8);
+     __RAM_segment_used_end__ = .;
+     . = . + __APP_HEAP_SIZE;
+     . = ALIGN(8);
+   } >DTCM
 
   .heap (NOLOAD) : ALIGN(8)
   {
@@ -189,5 +221,9 @@ SECTIONS
     *(.rodata*)
 
     KEEP(*(.eh_frame*))
-  } > ITCM
+    . = ALIGN(16);
+  } > MRAM
+
+  /* Check if data + heap + stack exceeds RAM limit */
+  ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
 }

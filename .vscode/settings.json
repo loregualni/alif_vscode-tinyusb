@@ -6,34 +6,4 @@
     "cmake.configureOnOpen": false,
 
     "cortex-debug.variableUseNaturalFormat": false,
-    "cmsis-csolution.actions": [
-        {
-            "path": "alif.csolution.yaml",
-            "target": "HE",
-            "config": {
-                "debug": "Alif Ensemble Debug (Cortex-Debug)"
-            },
-            "projects": [
-                {
-                    "path": "hello/hello.cproject.yaml",
-                    "config": {
-                        "debug": "Alif Ensemble Debug (Cortex-Debug)"
-                    }
-                },
-                {
-                    "path": "src/minimal.cproject.yaml",
-                    "config": {
-                        "debug": "Alif Ensemble Debug (Cortex-Debug)"
-                    }
-                }
-            ]
-        },
-        {
-            "path": "alif.csolution.yaml",
-            "target": "HP",
-            "config": {
-                "debug": "Alif Ensemble Debug (Cortex-Debug)"
-            }
-        }
-    ],
 }

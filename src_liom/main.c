@@ -3,63 +3,68 @@
 
 #include "tusb.h"
 
-static uint8_t control_buf[64];
+#define CTRL_BUFFER_SIZE 64
+#define BULK_BUFFER_SIZE 64
 
-// Handle control request
+#define IS_VENDOR_REQUEST_CMD(req, req_type, req_cmd) \
+    ((req->bmRequestType == req_type) &&              \
+     (req->bRequest == req_cmd))
+
+#define VENDOR_REQUEST_IN 0xC0
+#define VENDOR_REQUEST_READ 0x01
+#define IS_VENDOR_REQUEST_READ(req) \
+    IS_VENDOR_REQUEST_CMD(req, VENDOR_REQUEST_IN, VENDOR_REQUEST_READ)
+
+#define VENDOR_REQUEST_OUT 0x40
+#define VENDOR_REQUEST_WRITE 0x02
+#define IS_VENDOR_REQUEST_WRITE(req) \
+    IS_VENDOR_REQUEST_CMD(req, VENDOR_REQUEST_OUT, VENDOR_REQUEST_WRITE)
+
 bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request)
 {
-    if (request->bmRequestType == 0xC0 && request->bRequest == 0x01)
+    static uint8_t in_buffer[CTRL_BUFFER_SIZE] = "";
+    static uint8_t out_buffer[CTRL_BUFFER_SIZE] = "";
+    static uint32_t packet_id = 0;
+
+    if (IS_VENDOR_REQUEST_READ(request))
     {
-        // Vendor-specific control IN (device to host)
         if (stage == CONTROL_STAGE_SETUP)
         {
-            // Prepare data (echo back wValue)
-            return tud_control_xfer(rhport, request, "LIOM", 4);
-        }
-        else if (stage == CONTROL_STAGE_DATA)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
+            sprintf(out_buffer, "%s from DEVICE (%d)", in_buffer, packet_id++);
+            return tud_control_xfer(rhport, request, out_buffer, strlen(out_buffer));
         }
     }
-    else if (request->bmRequestType == 0x40 && request->bRequest == 0x02)
+    else if (IS_VENDOR_REQUEST_WRITE(request))
     {
-        // Vendor-specific control OUT (host to device)
         if (stage == CONTROL_STAGE_SETUP)
         {
-            return true;
-        }
-        else if (stage == CONTROL_STAGE_DATA)
-        {
-            // Store received data
-            uint16_t len = tud_control_xfer(rhport, request, control_buf, request->wLength);
-            // Echo back in next control IN
-            return len;
-        }
-        else
-        {
-            return false;
+            memset(in_buffer, 0x00, CTRL_BUFFER_SIZE);
+            return tud_control_xfer(rhport, request, in_buffer, request->wLength);
         }
     }
     else
     {
-        // Unknown request, cause stall
+        // Unknown command, cause stall
         return false;
     }
 
-    // failure, cause stall
-    return false;
+    return true;
 }
 
 void vendor_task(void)
 {
-    static uint8_t bulk_buffer[512] = "";
+    static uint8_t in_buffer[BULK_BUFFER_SIZE] = "";
+    static uint8_t out_buffer[BULK_BUFFER_SIZE] = "";
     static int packet_id = 0;
-    sprintf(bulk_buffer, "ShowCar packet %d", packet_id++);
-    tud_vendor_write(bulk_buffer, strlen(bulk_buffer) + 1);
+
+    if (tud_vendor_available())
+    {
+        memset(in_buffer, 0x00, BULK_BUFFER_SIZE);
+        tud_vendor_read(in_buffer, BULK_BUFFER_SIZE);
+
+        sprintf(out_buffer, "%s from DEVICE (%d)", in_buffer, packet_id++);
+        tud_vendor_write(out_buffer, strlen(out_buffer));
+    }
 }
 
 void main(void)

@@ -7,6 +7,7 @@ layer:
     - CFG_TUSB_RHPORT0_MODE: OPT_MODE_DEVICE
     - TUP_DCD_ENDPOINT_MAX: 8
     - TUD_OPT_RHPORT: 0
+    - BOARD_TUD_MAX_SPEED: OPT_MODE_HIGH_SPEED
 
   groups:
     - group: TinyUSB Alif Port
@@ -21,6 +22,7 @@ layer:
         - file: ../tinyusb/src/device/usbd_control.c
         - file: ../tinyusb/src/class/cdc/cdc_device.c
         - file: ../tinyusb/src/class/msc/msc_device.c
+        - file: ../tinyusb/src/class/vendor/vendor_device.c
         - file: ../tinyusb/hw/bsp/
 
   add-path:
